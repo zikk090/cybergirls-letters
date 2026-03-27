@@ -18,7 +18,8 @@ async function main() {
   const url = resolveDbUrl(rawUrl);
   console.log("Connecting to:", url);
 
-  const adapter = new PrismaLibSql({ url });
+  const authToken = process.env.DATABASE_AUTH_TOKEN;
+  const adapter = new PrismaLibSql({ url, ...(authToken ? { authToken } : {}) });
   const prisma = new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 
   const email = process.env.SEED_ADMIN_EMAIL ?? "admin@cybersafefoundation.org";
