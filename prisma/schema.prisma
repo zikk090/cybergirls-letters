@@ -1,0 +1,94 @@
+// CyberGirls Recommendation Letter Ticketing System
+// Prisma 7 + SQLite
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Admin user — authenticates via email/password, can be assigned tickets
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignedTickets Ticket[]        @relation("AssignedAdmin")
+  statusChanges   StatusHistory[]
+  notes           Note[]
+}
+
+/// A recommendation letter request submitted by an alumna (candidate)
+model Ticket {
+  id        String   @id @default(cuid())
+  ticketRef String   @unique // Human-readable: CG-2026-0001
+  status    String   @default("SUBMITTED") // TicketStatus enum values as strings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Candidate identification
+  admissionNumber String
+  candidateName   String
+  candidateEmail  String
+  phoneNumber     String?
+
+  // Submission details
+  purpose         String // SCHOOL_ADMISSION | JOB_APPLICATION | OTHER
+  organizationName String
+  submissionDeadline DateTime?
+  additionalInfo  String?
+
+  // File reference
+  letterFileUrl   String? // Uploaded drafted letter path
+
+  // External org form link (some orgs send their own portal URL)
+  orgFormUrl      String?
+
+  // Rejection
+  rejectionReason String?
+
+  // Assignment
+  assignedAdminId String?
+  assignedAdmin   AdminUser? @relation("AssignedAdmin", fields: [assignedAdminId], references: [id])
+
+  statusHistory StatusHistory[]
+  notes         Note[]
+}
+
+/// Immutable audit log — one row per status transition
+model StatusHistory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  fromStatus String? // null on initial SUBMITTED entry
+  toStatus   String
+
+  changedById String
+  changedBy   AdminUser @relation(fields: [changedById], references: [id])
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+/// Internal admin notes — not visible to candidates
+model Note {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  body      String
+
+  authorId String
+  author   AdminUser @relation(fields: [authorId], references: [id])
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
