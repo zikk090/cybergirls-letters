@@ -105,7 +105,7 @@ export default function SubmitPage() {
             <Field label="CyberGirls Admission Number *" error={errors.admissionNumber?.message}>
               <input
                 {...register("admissionNumber")}
-                placeholder="e.g. CGA-2023-0042"
+                placeholder="e.g. CG/22/0119"
                 className={input(errors.admissionNumber)}
               />
             </Field>
